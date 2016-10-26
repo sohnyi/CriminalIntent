@@ -12,6 +12,16 @@ public class Crime {
     private String mTitle;
     private Date mDate;
     private boolean mSolved;
+    private String mSuspect;
+
+    public String getSuspect() {
+        return mSuspect;
+    }
+
+    public void setSuspect(String suspect) {
+        mSuspect = suspect;
+    }
+
     private int position;
 
     public Crime() {
@@ -57,5 +67,9 @@ public class Crime {
 
     public void setPosition(int position) {
         this.position = position;
+    }
+
+    public String getPhotoFilename() {
+        return "IMG_" + getId().toString() + ".jpg";
     }
 }
