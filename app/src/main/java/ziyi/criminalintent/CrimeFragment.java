@@ -1,6 +1,7 @@
 package ziyi.criminalintent;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -40,6 +41,7 @@ import java.util.UUID;
 // TODO: 2016/10/22 show a tip and an button  when recycle view was empty.
 public class CrimeFragment extends Fragment {
     private Crime mCrime;
+    private Callbacks mCallbacks;
 
     private File mPhotoFile;
 
@@ -59,6 +61,15 @@ public class CrimeFragment extends Fragment {
     private static final int REQUEST_CONTACT = 1;
     private static final int REQUEST_PHOTO = 2;
 
+    /**
+     * Required interface for hosting activities.
+     */
+    public interface Callbacks {
+        void onCrimeUpdated(Crime crime);
+    }
+
+
+
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
         args.putSerializable(ARG_CRIME_ID, crimeId);
@@ -66,6 +77,15 @@ public class CrimeFragment extends Fragment {
         CrimeFragment fragment = new CrimeFragment();
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        Activity activity;
+        if (context instanceof Activity){
+            activity =(Activity) context;
+        }
     }
 
     @Override
@@ -83,6 +103,12 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
+
+    @Override
     public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle saveInstanceState) {
         View view = inflater.inflate(R.layout.fragment_crime, container, false);
@@ -96,6 +122,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 mCrime.setTitle(s.toString());
+                updateCrime();
             }
 
             @Override
@@ -122,6 +149,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 mCrime.setSolved(isChecked);
+                updateCrime();
             }
         });
 
@@ -206,10 +234,10 @@ public class CrimeFragment extends Fragment {
         if (resultCode != Activity.RESULT_OK) {
             return;
         }
-
         if (requestCode == REQUEST_DATE) {
             Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mCrime.setDate(date);
+            updateCrime();
             updateDate();
         } else if (requestCode == REQUEST_CONTACT) {
             Uri contactUri = data.getData();
@@ -227,14 +255,21 @@ public class CrimeFragment extends Fragment {
                 cursor.moveToFirst();
                 String suspect = cursor.getString(0);
                 mCrime.setSuspect(suspect);
+                updateCrime();
                 mSuspectButton.setText(suspect);
             } finally {
                 cursor.close();
             }
         } else if (requestCode == REQUEST_PHOTO) {
-            updatePhotoView();;
+            updateCrime();
+            updatePhotoView();
         }
     }
+    private void updateCrime() {
+        CrimeLab.get(getActivity()).updateCrime(mCrime);
+        mCallbacks.onCrimeUpdated(mCrime);
+    }
+
 
     private void updateDate() {
         mDateButton.setText(DateFormat.format("EEE, d MMM yyyy", mCrime.getDate()));
